@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html, body {
+  background: #f7f6f3;
+  color: #1f2937;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle scrollbars in scrollable lanes */
+.lane-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.lane-scroll::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 8px; }
+.lane-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* Task disappear animation */
+@keyframes cardDone {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.92); }
+}
+.card-done { animation: cardDone 220ms ease forwards; pointer-events: none; }
