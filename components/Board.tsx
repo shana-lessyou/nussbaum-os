@@ -176,7 +176,7 @@ export function Board() {
         <main className="flex-1 p-3 md:p-4 overflow-x-auto">
           {/* 4 columns: 3 business (small) + Personal (~2/3 of width).
               Personal column = scorecard strip on top, tasks below, capture at bottom. */}
-          <div className="grid gap-3 md:gap-4 min-w-[1200px] lg:min-w-0 lg:grid-cols-[1fr_1fr_1fr_6fr] h-[calc(100vh-58px-24px)]">
+          <div className="grid gap-3 md:gap-4 min-w-[1200px] lg:min-w-0 lg:grid-cols-[2fr_2fr_2fr_3fr] h-[calc(100vh-58px-24px)]">
             {(["Capacera", "Praxemy", "LYMP"] as BusinessDomain[]).map((domain) => (
               <DomainColumn
                 key={domain}

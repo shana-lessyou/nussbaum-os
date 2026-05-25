@@ -129,13 +129,6 @@ export function MeScorecard({
             onChange={(e) => set("sleep_hrs", e.target.value === "" ? null : Number(e.target.value))}
           />
         </Tile>
-
-        <Tile label="Notes" className="flex-1 min-w-[160px]">
-          <Input className="h-6 text-sm px-1"
-            value={d?.notes ?? ""}
-            onChange={(e) => set("notes", e.target.value || null)}
-          />
-        </Tile>
       </div>
     </div>
   );
