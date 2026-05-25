@@ -1,18 +1,38 @@
 /**
- * POST /api/tasks — agent ingestion endpoint.
+ * /api/tasks — agent ingestion + read + delete-by-id (id via /api/tasks/[id]).
  *
- * Authenticated with the `x-agent-secret` header (shared secret, env
- * AGENT_SHARED_SECRET). Inserts one or many tasks against the single owner
- * identified by env AGENT_USER_ID (Shana's Supabase auth UID). Uses the
- * service-role client so it bypasses RLS — this is safe because the secret
- * check + AGENT_USER_ID together gate every write.
+ * All methods authenticated with the `x-agent-secret` header (env
+ * AGENT_SHARED_SECRET). All rows are scoped to env AGENT_USER_ID using the
+ * service-role client.
  *
- * Accepts a single task object OR an array of task objects.
+ *   POST   — create one or many tasks. Body: object | object[].
+ *   GET    — list tasks. Query string filters (all optional):
+ *              status      = open | done
+ *              domain      = Capacera | Praxemy | LYMP | Personal
+ *              subdomain   = me | home | boys
+ *              created_by  = exact match
+ *              since       = ISO timestamp; filters on done_at when status=done,
+ *                            otherwise created_at
+ *              limit       = 1..500, default 100
  */
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
+
+// Shared auth helper — also used by the [id] route.
+export function checkAgentSecret(req: Request): NextResponse | { userId: string } {
+  const secret   = req.headers.get("x-agent-secret");
+  const expected = process.env.AGENT_SHARED_SECRET;
+  if (!expected) return NextResponse.json(
+    { ok: false, error: "AGENT_SHARED_SECRET not configured on server" }, { status: 500 });
+  if (!secret || secret !== expected) return NextResponse.json(
+    { ok: false, error: "Unauthorized" }, { status: 401 });
+  const userId = process.env.AGENT_USER_ID;
+  if (!userId) return NextResponse.json(
+    { ok: false, error: "AGENT_USER_ID not configured on server" }, { status: 500 });
+  return { userId };
+}
 
 // ---- vocab ----
 const VALID_DOMAINS    = ["Capacera", "Praxemy", "LYMP", "Personal"] as const;
@@ -44,19 +64,9 @@ function isStringIn<T extends readonly string[]>(v: unknown, set: T): v is T[num
 
 export async function POST(req: Request) {
   // ---- auth ----
-  const secret = req.headers.get("x-agent-secret");
-  const expected = process.env.AGENT_SHARED_SECRET;
-  if (!expected) {
-    return json(500, { ok: false, error: "AGENT_SHARED_SECRET not configured on server" });
-  }
-  if (!secret || secret !== expected) {
-    return json(401, { ok: false, error: "Unauthorized" });
-  }
-
-  const userId = process.env.AGENT_USER_ID;
-  if (!userId) {
-    return json(500, { ok: false, error: "AGENT_USER_ID not configured on server" });
-  }
+  const auth = checkAgentSecret(req);
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
 
   // ---- parse ----
   let body: unknown;
@@ -167,4 +177,60 @@ export async function POST(req: Request) {
   }
 
   return json(200, { ok: true, created });
+}
+
+// ============================================================================
+// GET /api/tasks — list with filters
+// ============================================================================
+export async function GET(req: Request) {
+  const auth = checkAgentSecret(req);
+  if (auth instanceof NextResponse) return auth;
+  const { userId } = auth;
+
+  const url    = new URL(req.url);
+  const qp     = url.searchParams;
+  const status     = qp.get("status");
+  const domain     = qp.get("domain");
+  const subdomain  = qp.get("subdomain");
+  const createdBy  = qp.get("created_by");
+  const sinceISO   = qp.get("since");
+  const limitParam = Number(qp.get("limit") ?? 100);
+  const limit      = Math.max(1, Math.min(500, Number.isFinite(limitParam) ? Math.floor(limitParam) : 100));
+
+  if (status && status !== "open" && status !== "done") {
+    return json(400, { ok: false, error: "'status' must be open|done" });
+  }
+  if (domain    && !(["Capacera","Praxemy","LYMP","Personal"] as string[]).includes(domain)) {
+    return json(400, { ok: false, error: "'domain' invalid" });
+  }
+  if (subdomain && !(["me","home","boys"] as string[]).includes(subdomain)) {
+    return json(400, { ok: false, error: "'subdomain' invalid" });
+  }
+  if (sinceISO && Number.isNaN(Date.parse(sinceISO))) {
+    return json(400, { ok: false, error: "'since' must be ISO timestamp" });
+  }
+
+  const admin = createAdminClient();
+  let q = admin
+    .from("tasks")
+    .select("id,domain,subdomain,category,title,notes,swimlane,points,method,status,created_by,created_at,done_at,completion_notes")
+    .eq("user_id", userId)
+    .order("done_at",    { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (status)    q = q.eq("status", status);
+  if (domain)    q = q.eq("domain", domain);
+  if (subdomain) q = q.eq("subdomain", subdomain);
+  if (createdBy) q = q.eq("created_by", createdBy);
+  if (sinceISO) {
+    // For done queries, filter on completion time; otherwise on creation time.
+    if (status === "done") q = q.gte("done_at", sinceISO);
+    else                   q = q.gte("created_at", sinceISO);
+  }
+
+  const { data, error } = await q;
+  if (error) return json(500, { ok: false, error: error.message });
+
+  return json(200, { ok: true, count: data?.length ?? 0, tasks: data ?? [] });
 }
