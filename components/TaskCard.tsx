@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { Button } from "@/components/ui/Button";
 import { cn, minutesFor } from "@/lib/utils";
 import type { Method, Swimlane, Task } from "@/lib/types";
-import { CATEGORY_META, DOMAIN_COLORS, isBusiness } from "@/lib/domains";
+import { CATEGORY_META, DOMAIN_COLORS, SUBDOMAIN_META, isBusiness } from "@/lib/domains";
+import type { Subdomain } from "@/lib/types";
 
 const METHOD_ICON: Record<Method, React.ComponentType<{ className?: string }>> = {
   phys: Wrench,
@@ -50,6 +51,10 @@ export function TaskCard({
 
   const showCategory = isBusiness(task.domain) && task.category;
   const catMeta = showCategory ? CATEGORY_META[task.category!] : null;
+  const subMeta =
+    task.domain === "Personal" && task.subdomain && task.subdomain in SUBDOMAIN_META
+      ? SUBDOMAIN_META[task.subdomain as Subdomain]
+      : null;
 
   return (
     <div
@@ -80,6 +85,11 @@ export function TaskCard({
       </div>
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted">
         <div className="flex items-center gap-1.5">
+          {subMeta && (
+            <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-medium", subMeta.pill)}>
+              {subMeta.label}
+            </span>
+          )}
           <MethodIcon className="h-3 w-3" />
           <span className="tabular-nums">
             {task.points} pt{task.points === 1 ? "" : "s"} · {minutesFor(task.points)} min

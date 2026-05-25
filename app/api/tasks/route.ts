@@ -21,14 +21,6 @@ const VALID_SWIMLANES  = ["today", "this-week", "backlog"] as const;
 const VALID_METHODS    = ["phys", "phone", "comp", "hands-free"] as const;
 const VALID_CATEGORIES = ["build", "sell", "admin"] as const;
 
-type Subdomain = (typeof VALID_SUBDOMAINS)[number];
-
-// Personal → existing UI column. The board groups Home/Boys/Me as siblings,
-// so we translate Personal+subdomain into the corresponding storage domain
-// to keep tasks visible without touching the existing UI.
-const PERSONAL_TO_STORAGE: Record<Subdomain, "Home" | "Boys" | "Me"> = {
-  home: "Home", boys: "Boys", me: "Me",
-};
 
 interface IncomingTask {
   domain?: unknown;
@@ -102,8 +94,7 @@ export async function POST(req: Request) {
     }
     const domainIn = t.domain;
 
-    // ---- subdomain + resolved storage domain ----
-    let storeDomain: string;
+    // ---- subdomain (only meaningful for Personal) ----
     let storeSubdomain: string | null;
     if (domainIn === "Personal") {
       const sdRaw = t.subdomain ?? "me";
@@ -113,13 +104,12 @@ export async function POST(req: Request) {
           error: `${prefix}'subdomain' for Personal must be one of ${VALID_SUBDOMAINS.join("|")}`,
         });
       }
-      storeDomain    = PERSONAL_TO_STORAGE[sdRaw];
       storeSubdomain = sdRaw;
     } else {
       // Business domain — spec says ignore any subdomain sent.
-      storeDomain    = domainIn;
       storeSubdomain = null;
     }
+    const storeDomain = domainIn;
 
     // ---- optional fields with defaults ----
     const swimlane = isStringIn(t.swimlane, VALID_SWIMLANES) ? t.swimlane : "this-week";

@@ -1,5 +1,6 @@
-export type Domain = "Capacera" | "Praxemy" | "LYMP" | "Home" | "Boys" | "Me";
+export type Domain = "Capacera" | "Praxemy" | "LYMP" | "Personal";
 export type BusinessDomain = "Capacera" | "Praxemy" | "LYMP";
+export type Subdomain = "me" | "home" | "boys";
 export type Swimlane = "today" | "this-week" | "backlog";
 export type Method = "phys" | "phone" | "comp" | "hands-free";
 export type TaskStatus = "open" | "done";
@@ -9,6 +10,7 @@ export interface Task {
   id: string;
   user_id: string;
   domain: Domain;
+  subdomain: Subdomain | string | null;
   title: string;
   notes: string | null;
   swimlane: Swimlane;
@@ -56,7 +58,6 @@ export interface DailyRow {
   carbs_g: number | null;
   fat_g: number | null;
   notes: string | null;
-  // From daily_with_rollups view:
   calories_total?: number;
   spending_total?: number;
 }
@@ -75,6 +76,7 @@ export type Scope = "day" | "week" | "month";
 export interface CaptureResult {
   tasks: Array<{
     domain: Domain;
+    subdomain?: Subdomain;
     title: string;
     points?: number;
     method?: Method;
@@ -88,6 +90,5 @@ export interface CaptureResult {
     unit: EventUnit;
   }>;
   daily_updates: Partial<DailyRow>;
-  // Macros are deltas: add to existing daily values rather than overwrite.
   macros_delta?: { protein_g?: number; carbs_g?: number; fat_g?: number };
 }

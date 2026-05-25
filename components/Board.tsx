@@ -11,12 +11,12 @@ import {
   insertTask, moveTask, updateTask, upsertBusinessKpi, upsertDaily,
 } from "@/lib/queries";
 import type {
-  BusinessDomain, BusinessKpi, DailyRow, Domain, Scope, Swimlane, Task,
+  BusinessDomain, BusinessKpi, DailyRow, Domain, Scope, Subdomain, Swimlane, Task,
 } from "@/lib/types";
-import { DAILY_CAPACITY, DOMAIN_GROUPS, DOMAIN_ORDER, isBusiness } from "@/lib/domains";
+import { DAILY_CAPACITY } from "@/lib/domains";
 import { DomainColumn } from "./DomainColumn";
 import { MeScorecard } from "./MeScorecard";
-import { MeTaskBar } from "./MeTaskBar";
+import { PersonalColumn } from "./PersonalColumn";
 import { QuickCapture } from "./QuickCapture";
 import { ScopeToggle } from "./ScopeToggle";
 import { TaskDetail, type TaskDraft } from "./TaskDetail";
@@ -106,6 +106,7 @@ export function Board() {
     if (!draft.title || !draft.domain) return;
     const inserted = await insertTask(sb, {
       domain: draft.domain,
+      subdomain: draft.subdomain ?? (draft.domain === "Personal" ? "me" : null),
       title: draft.title,
       notes: draft.notes ?? null,
       points: draft.points ?? 1,
@@ -173,27 +174,17 @@ export function Board() {
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDrop}>
         <main className="flex-1 p-3 md:p-4 overflow-x-auto">
-          <div className="grid gap-3 md:gap-4 min-w-[1200px] lg:min-w-0 lg:grid-cols-[1fr_1fr_1fr_1.6fr_1fr_1fr] h-[calc(100vh-58px-24px)]">
-            {DOMAIN_ORDER.map((domain) => domain === "Me" ? (
-              <div key="me" className="flex flex-col gap-3 min-h-0">
-                <MeTaskBar
-                  tasks={tasksFor("Me")}
-                  onComplete={handleComplete}
-                  onOpen={(t) => setEditing(t)}
-                  onSplit={handleSplit}
-                  onAdd={() => setCreating({ domain: "Me", swimlane: "today", points: 1, method: "comp" })}
-                />
-                <div className="flex-1 min-h-0"><MeScorecard daily={daily} onPatch={handlePatchDaily} /></div>
-                <QuickCapture onLogged={reload} />
-              </div>
-            ) : (
+          {/* 4 columns: 3 business (small) + Personal (~2/3 of width).
+              Personal column = scorecard strip on top, tasks below, capture at bottom. */}
+          <div className="grid gap-3 md:gap-4 min-w-[1200px] lg:min-w-0 lg:grid-cols-[1fr_1fr_1fr_6fr] h-[calc(100vh-58px-24px)]">
+            {(["Capacera", "Praxemy", "LYMP"] as BusinessDomain[]).map((domain) => (
               <DomainColumn
                 key={domain}
                 domain={domain}
                 tasks={tasksFor(domain)}
                 scope={scope}
-                kpi={isBusiness(domain) ? kpiFor(domain) : undefined}
-                onKpiChange={isBusiness(domain) ? (patch) => handleKpiChange(domain, patch) : undefined}
+                kpi={kpiFor(domain)}
+                onKpiChange={(patch) => handleKpiChange(domain, patch)}
                 onAdd={(d) => setCreating({ domain: d, swimlane: "today", points: 1, method: "comp" })}
                 onComplete={handleComplete}
                 onMoveLane={handleMoveLane}
@@ -201,14 +192,25 @@ export function Board() {
                 onOpen={(t) => setEditing(t)}
               />
             ))}
-          </div>
 
-          <div className="hidden lg:grid mt-2 grid-cols-[1fr_1fr_1fr_1.6fr_1fr_1fr] text-[10px] tracking-wider text-muted uppercase">
-            {DOMAIN_GROUPS.flatMap(g =>
-              g.domains.map((d, i) => (
-                <div key={d} className={i === 0 ? "pl-1" : "pl-1"}>{i === 0 ? g.label : ""}</div>
-              )),
-            )}
+            <div className="flex flex-col gap-3 min-h-0">
+              <MeScorecard daily={daily} onPatch={handlePatchDaily} />
+              <div className="flex-1 min-h-0">
+                <PersonalColumn
+                  tasks={tasksFor("Personal")}
+                  scope={scope}
+                  onAdd={(sub: Subdomain) => setCreating({
+                    domain: "Personal", subdomain: sub,
+                    swimlane: "today", points: 1, method: "comp",
+                  })}
+                  onComplete={handleComplete}
+                  onMoveLane={handleMoveLane}
+                  onSplit={handleSplit}
+                  onOpen={(t) => setEditing(t)}
+                />
+              </div>
+              <QuickCapture onLogged={reload} />
+            </div>
           </div>
         </main>
       </DndContext>

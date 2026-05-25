@@ -11,7 +11,8 @@ const SYSTEM_PROMPT = `You parse a user's free-text "brain dump" into structured
 
 Return STRICT JSON ONLY (no prose, no markdown fences). Shape:
 {
-  "tasks":  [ { "domain": "Capacera|Praxemy|LYMP|Home|Boys|Me",
+  "tasks":  [ { "domain": "Capacera|Praxemy|LYMP|Personal",
+                "subdomain": "me|home|boys",            // ONLY when domain is Personal
                 "title": "short imperative phrase",
                 "points": 1, "method": "phys|phone|comp|hands-free",
                 "swimlane": "today|this-week|backlog",
@@ -30,7 +31,9 @@ Return STRICT JSON ONLY (no prose, no markdown fences). Shape:
 
 Rules:
 - 1 point ≈ 20 minutes of focused work; cap individual tasks at ≤4 points (split larger).
-- If unclear which business/domain, default tasks to "Home".
+- If unclear which domain, default tasks to "Personal" with subdomain "me".
+- For Personal tasks, choose subdomain: "me" (self / Shana), "home" (household / property),
+  or "boys" (kids / family logistics).
 - For business tasks, ALWAYS classify category as Build (making/shipping product),
   Sell (sales, marketing, customer outreach), or Admin (paperwork, bookkeeping, ops).
 - Meals → events with unit "kcal". Purchases → unit "USD".
@@ -77,6 +80,7 @@ export async function POST(req: Request) {
         .filter(t => t.title && t.domain)
         .map(t => ({
           domain: t.domain,
+          subdomain: t.domain === "Personal" ? (t.subdomain ?? "me") : null,
           title: t.title,
           points: t.points ?? 1,
           method: t.method ?? "comp",

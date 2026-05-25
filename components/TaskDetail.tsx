@@ -3,11 +3,11 @@ import * as React from "react";
 import { Dialog } from "@/components/ui/Dialog";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { DOMAIN_ORDER, isBusiness } from "@/lib/domains";
-import type { Category, Domain, Method, Swimlane, Task } from "@/lib/types";
+import { DOMAIN_ORDER, SUBDOMAIN_ORDER, isBusiness } from "@/lib/domains";
+import type { Category, Domain, Method, Subdomain, Swimlane, Task } from "@/lib/types";
 
-const METHODS: Method[]    = ["phys", "phone", "comp", "hands-free"];
-const SWIMLANES: Swimlane[] = ["today", "this-week", "backlog"];
+const METHODS: Method[]      = ["phys", "phone", "comp", "hands-free"];
+const SWIMLANES: Swimlane[]  = ["today", "this-week", "backlog"];
 const CATEGORIES: Category[] = ["build", "sell", "admin"];
 
 export type TaskDraft = Partial<Task> & { title?: string; domain?: Domain };
@@ -39,6 +39,7 @@ export function TaskDetail({
         points: task.points,
         method: task.method,
         domain: task.domain,
+        subdomain: task.subdomain ?? undefined,
         swimlane: task.swimlane,
         category: task.category ?? undefined,
       });
@@ -55,6 +56,7 @@ export function TaskDetail({
   }, [task?.id, mode]);
 
   const businessDomain = !!form.domain && isBusiness(form.domain);
+  const personalDomain = form.domain === "Personal";
 
   async function submit() {
     if (mode === "create") { await onCreate?.(form); }
@@ -139,6 +141,18 @@ export function TaskDetail({
               >
                 <option value="">— none —</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>)}
+              </select>
+            </div>
+          )}
+          {personalDomain && (
+            <div className="col-span-2">
+              <label className="text-xs font-medium text-muted">Who</label>
+              <select
+                className="h-9 w-full rounded-md border border-line bg-white px-2 text-sm"
+                value={(form.subdomain as string) ?? "me"}
+                onChange={(e) => setForm({ ...form, subdomain: e.target.value as Subdomain })}
+              >
+                {SUBDOMAIN_ORDER.map(s => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
               </select>
             </div>
           )}
