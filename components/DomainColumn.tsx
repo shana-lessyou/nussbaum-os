@@ -18,7 +18,7 @@ function Lane({
   domain: Domain;
   swimlane: Swimlane;
   tasks: Task[];
-  onComplete: (id: string) => void;
+  onComplete: (id: string, completionNotes?: string) => void;
   onMoveLane: (id: string, lane: Swimlane) => void;
   onSplit: (t: Task) => void;
   onOpen: (t: Task) => void;
@@ -59,7 +59,7 @@ export function DomainColumn({
   kpi?: BusinessKpi;
   onAdd: (domain: Domain) => void;
   onKpiChange?: (patch: Partial<Pick<BusinessKpi, "customers" | "revenue">>) => void;
-  onComplete: (id: string) => void;
+  onComplete: (id: string, completionNotes?: string) => void;
   onMoveLane: (id: string, lane: Swimlane) => void;
   onSplit: (t: Task) => void;
   onOpen: (t: Task) => void;

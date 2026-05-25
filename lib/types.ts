@@ -22,6 +22,7 @@ export interface Task {
   created_by: string;
   created_at: string;
   done_at: string | null;
+  completion_notes: string | null;
 }
 
 export type EventType = "meal" | "purchase";

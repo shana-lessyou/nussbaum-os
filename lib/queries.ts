@@ -86,11 +86,16 @@ export async function moveTask(
   await updateTask(sb, id, next);
 }
 
-export async function completeTask(sb: SupabaseClient, id: string): Promise<void> {
-  const { error } = await sb
-    .from("tasks")
-    .update({ status: "done", done_at: new Date().toISOString() })
-    .eq("id", id);
+export async function completeTask(
+  sb: SupabaseClient, id: string, completion_notes?: string | null,
+): Promise<void> {
+  const patch: Record<string, unknown> = {
+    status: "done",
+    done_at: new Date().toISOString(),
+  };
+  const note = completion_notes?.trim();
+  if (note) patch.completion_notes = note;
+  const { error } = await sb.from("tasks").update(patch).eq("id", id);
   if (error) throw error;
 }
 

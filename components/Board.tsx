@@ -70,9 +70,9 @@ export function Board() {
     totalTodayPts >= DAILY_CAPACITY * 0.8     ? "warn" : "ok";
 
   // ---- Mutations (optimistic) ----
-  async function handleComplete(id: string) {
+  async function handleComplete(id: string, completionNotes?: string) {
     setTasks(prev => prev.filter(t => t.id !== id));
-    try { await completeTask(sb, id); } catch (e) { console.error(e); reload(); }
+    try { await completeTask(sb, id, completionNotes); } catch (e) { console.error(e); reload(); }
   }
   async function handleMoveLane(id: string, swimlane: Swimlane) {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, swimlane } : t));

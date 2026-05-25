@@ -18,7 +18,7 @@ function Lane({
 }: {
   swimlane: Swimlane;
   tasks: Task[];
-  onComplete: (id: string) => void;
+  onComplete: (id: string, completionNotes?: string) => void;
   onMoveLane: (id: string, lane: Swimlane) => void;
   onSplit: (t: Task) => void;
   onOpen: (t: Task) => void;
@@ -56,7 +56,7 @@ export function PersonalColumn({
   tasks: Task[];
   scope: Scope;
   onAdd: (subdomain: Subdomain) => void;
-  onComplete: (id: string) => void;
+  onComplete: (id: string, completionNotes?: string) => void;
   onMoveLane: (id: string, lane: Swimlane) => void;
   onSplit: (t: Task) => void;
   onOpen: (t: Task) => void;
