@@ -16,6 +16,7 @@ import type {
 import { DAILY_CAPACITY, DOMAIN_GROUPS, DOMAIN_ORDER, isBusiness } from "@/lib/domains";
 import { DomainColumn } from "./DomainColumn";
 import { MeScorecard } from "./MeScorecard";
+import { MeTaskBar } from "./MeTaskBar";
 import { QuickCapture } from "./QuickCapture";
 import { ScopeToggle } from "./ScopeToggle";
 import { TaskDetail, type TaskDraft } from "./TaskDetail";
@@ -175,6 +176,13 @@ export function Board() {
           <div className="grid gap-3 md:gap-4 min-w-[1200px] lg:min-w-0 lg:grid-cols-[1fr_1fr_1fr_1.6fr_1fr_1fr] h-[calc(100vh-58px-24px)]">
             {DOMAIN_ORDER.map((domain) => domain === "Me" ? (
               <div key="me" className="flex flex-col gap-3 min-h-0">
+                <MeTaskBar
+                  tasks={tasksFor("Me")}
+                  onComplete={handleComplete}
+                  onOpen={(t) => setEditing(t)}
+                  onSplit={handleSplit}
+                  onAdd={() => setCreating({ domain: "Me", swimlane: "today", points: 1, method: "comp" })}
+                />
                 <div className="flex-1 min-h-0"><MeScorecard daily={daily} onPatch={handlePatchDaily} /></div>
                 <QuickCapture onLogged={reload} />
               </div>
